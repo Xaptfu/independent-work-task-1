@@ -1,6 +1,6 @@
 # Виртуальное окружение
 
-.qc_reads/
+.venv/
 
 venv/
 
@@ -31,3 +31,7 @@ results/
 .DS_Store
 
 Thumbs.db
+
+
+.venv/
+data/raw/*.fastq

@@ -3,7 +3,7 @@
 
 ## Структура
 qc_reads/
-├── .gitignore                     # исключения git (results/, .qc_reads/, __pycache__/)
+├── .gitignore                     # исключения git (results/, .venv/, __pycache__/)
 ├── README.md                      # этот файл
 ├── requirements.txt               # прямые зависимости
 ├── data/
@@ -36,23 +36,27 @@ git clone <> plate-analysis
 cd qc_reads
 
 ### создать окружение (в корне проекта!)
-python3 -m venv .qc_reads
+python3 -m venv ..venv
 
 # активировать
-source .qc_reads/bin/activate       # Linux / macOS
-.qc_reads\Scripts\activate          # Windows (PowerShell)
-.qc_reads\Scripts\activate.bat      # Windows (cmd)
+source .venv/bin/activate       # Linux / macOS
+.venv\Scripts\activate          # Windows (PowerShell)
+.venv\Scripts\activate.bat      # Windows (cmd)
 
 ## установить зависимости
 pip install -r requirements.txt
 
-Имя окружения — .qc_reads. Если source venv/bin/activate даёт No such file or directory, окружение лежит в другом месте или под другим именем.
+Имя окружения — .venv. Если source venv/bin/activate даёт No such file or directory, окружение лежит в другом месте или под другим именем.
 
 ## Входные данные
 
 Файл FASTQ, кодировка UTF-8. Каждое прочтение занимает 4 строки: заголовок, последовательность, разделитель + и строка качества. Длина последовательности должна совпадать с длиной строки качества (иначе прочтение отбрасывается на этапе чтения).
 
-Файл по умолчанию — data/raw/reads_2024_04_02.fastq от корня проекта. Другой файл передаётся первым аргументом, каталог результатов — вторым:
+Файл по умолчанию — data/raw/reads_2024_04_02.fastq от корня проекта. Другой файл передаётся первым аргументом, каталог результатов — вторым
+
+Внимание!!!
+Файлы FASTQ не хранятся в репозитории. Поместите ваш файл reads_2024_04_02.fastq в каталог data/raw/ перед запуском
+
 
 ```bash
 python3 src/main.py data/raw/my_reads.fastq results/
