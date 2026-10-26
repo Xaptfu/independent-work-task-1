@@ -13,9 +13,11 @@ import numpy as np
 import matplotlib.pyplot as plt
 # import pandas as pd
 # from Bio import SeqIO
+from pathlib import Path
 
-IN = "D:\\Работа\\секвенирование\\апрель 2024\\reads_2024_04_02.fastq"
-OUTDIR = "D:\\Работа\\секвенирование\\апрель 2024\\результаты\\"
+BASE_DIR = Path(__file__).resolve().parent.parent
+DEFAULT_INPUT = BASE_DIR / "data" / "raw" / "reads_2024_04_02.fastq"
+DEFAULT_RESULTS = BASE_DIR / "results"
 
 ADAPTER = "AGATCGGAAGAGC"
 
@@ -23,8 +25,8 @@ STATS = []
 SKIPPED = []
 
 
-def read_fastq():
-    f = open(IN)
+def read_fastq(path):
+    f = open(path)
     lines = f.readlines()
     f.close()
     print("строк в файле", len(lines))
@@ -61,7 +63,7 @@ def meanq(q):
     return t / len(q)
 
 
-r = read_fastq()
+r = read_fastq(DEFAULT_INPUT)
 print("прочтений", len(r))
 print("!!! проверка", r[0][0])
 
@@ -135,29 +137,29 @@ plt.xlabel("среднее качество")
 plt.ylabel("число прочтений")
 plt.title("Качество прочтений")
 plt.tight_layout()
-plt.savefig(OUTDIR + "qc.png", dpi=200)
+plt.savefig(DEFAULT_RESULTS/"qc.png", dpi=200)
 print("график готов")
 
-f2 = open(OUTDIR + "clean_reads.fasta", "w")
+f2 = open(DEFAULT_RESULTS/"clean_reads.fasta", "w")
 for x in good:
     f2.write(">" + x[0][1:] + "\n")
     f2.write(x[1] + "\n")
 f2.close()
 
-f3 = open(OUTDIR + "qc_summary.tsv", "w")
+f3 = open(DEFAULT_RESULTS/"qc_summary.tsv", "w")
 f3.write("read\tlength\tgc\tmeanq\n")
 for x in STATS:
     f3.write(x[0][1:] + "\t" + str(x[1]) + "\t" + str(round(x[2], 2)) + "\t" + str(round(x[3], 2)) + "\n")
 f3.close()
 
-f4 = open(OUTDIR + "report.txt", "w")
+f4 = open(DEFAULT_RESULTS/"report.txt", "w")
 f4.write("QC ОТЧЁТ\n")
-f4.write("файл: " + IN + "\n")
+f4.write("файл: " + str(DEFAULT_INPUT) + "\n")
 f4.write("всего прочтений: " + str(len(r)) + "\n")
 f4.write("прошло фильтр: " + str(len(good)) + "\n")
 f4.write("средний GC: " + str(round(m2, 2)) + "\n")
 f4.write("прочтений с N: " + str(nn) + "\n")
 f4.close()
 
-print("отчёт записан в", OUTDIR + "report.txt")
+print("отчёт записан в", DEFAULT_RESULTS/"report.txt")
 print("ГОТОВО")
