@@ -8,9 +8,9 @@
 import os
 import sys
 import math
-import random
 import numpy as np
 import matplotlib.pyplot as plt
+import time
 # import pandas as pd
 # from Bio import SeqIO
 from pathlib import Path
@@ -25,8 +25,9 @@ STATS = []
 SKIPPED = []
 
 
+
 def read_fastq(path):
-    f = open(path)
+    f = open(path, encoding="utf-8")
     lines = f.readlines()
     f.close()
     print("строк в файле", len(lines))
@@ -62,104 +63,114 @@ def meanq(q):
         t = t + (ord(x) - 33)
     return t / len(q)
 
+def main():
 
-r = read_fastq(DEFAULT_INPUT)
-print("прочтений", len(r))
-print("!!! проверка", r[0][0])
+    t0 = time.time()
 
-good = []
-bad = []
-for x in r:
-    try:
-        z = meanq(x[2])
-    except:
-        pass
-    s = x[1]
-    if s[0:13] == ADAPTER:
-        s = s[13:]
-        x[2] = x[2][13:]
-    if z >= 25 and len(s) >= 100:
-        good.append([x[0], s, x[2]])
-    else:
-        bad.append(x[0])
-    STATS.append([x[0], len(s), gc(s), z])
+    input_path = Path(sys.argv[1]) if len(sys.argv) > 1 else DEFAULT_INPUT
 
-print("хороших", len(good))
-print("плохих", len(bad))
-print("отброшено при чтении", len(SKIPPED))
+    results_dir = Path(sys.argv[2]) if len(sys.argv) > 2 else DEFAULT_RESULTS
 
-# ---- GC по хорошим ----
-g1 = []
-for x in good:
-    g1.append(gc(x[1]))
-m1 = sum(g1) / len(g1)
-print("средний GC хороших", m1)
+    results_dir.mkdir(parents=True, exist_ok=True)
 
-# ---- GC по всем ----
-g2 = []
-for x in r:
-    g2.append(gc(x[1]))
-m2 = sum(g2) / len(g2)
-print("средний GC всех", m2)
+    r = read_fastq(input_path)
+    print("прочтений", len(r))
 
-# случайная подвыборка для оценки
-sub = random.sample(STATS, 500)
-qq = []
-for x in sub:
-    qq.append(x[3])
-print("среднее качество по подвыборке", sum(qq) / 500)
+    good = []
+    bad = []
+    for x in r:
+        try:
+            z = meanq(x[2])
+        except:
+            pass
+        s = x[1]
+        if s[0:13] == ADAPTER:
+            s = s[13:]
+            x[2] = x[2][13:]
+        if z >= 25 and len(s) >= 100:
+            good.append([x[0], s, x[2]])
+        else:
+            bad.append(x[0])
+        STATS.append([x[0], len(s), gc(s), z])
 
-nn = 0
-for x in r:
-    if "N" in x[1]:
-        nn = nn + 1
-print("прочтений с N", nn)
-print("доля N-содержащих", nn / len(r))
+    print("хороших", len(good))
+    print("плохих", len(bad))
+    print("отброшено при чтении", len(SKIPPED))
 
-# for x in STATS:
-#     if x[3] < 15:
-#         print("очень плохое", x[0])
+    # ---- GC по хорошим ----
+    g1 = []
+    for x in good:
+        g1.append(gc(x[1]))
+    m1 = sum(g1) / len(g1)
+    print("средний GC хороших", m1)
 
-plt.figure(figsize=(10, 4))
-plt.subplot(1, 2, 1)
-plt.hist(g2, bins=40)
-plt.axvline(m2, color="r")
-plt.xlabel("GC, %")
-plt.ylabel("число прочтений")
-plt.title("GC-состав")
-plt.subplot(1, 2, 2)
-ll = []
-for x in STATS:
-    ll.append(x[3])
-plt.hist(ll, bins=40)
-plt.axvline(25, color="r")
-plt.xlabel("среднее качество")
-plt.ylabel("число прочтений")
-plt.title("Качество прочтений")
-plt.tight_layout()
-plt.savefig(DEFAULT_RESULTS/"qc.png", dpi=200)
-print("график готов")
+    # ---- GC по всем ----
+    g2 = []
+    for x in r:
+        g2.append(gc(x[1]))
+    m2 = sum(g2) / len(g2)
+    print("средний GC всех", m2)
 
-f2 = open(DEFAULT_RESULTS/"clean_reads.fasta", "w")
-for x in good:
-    f2.write(">" + x[0][1:] + "\n")
-    f2.write(x[1] + "\n")
-f2.close()
+    qq = []
+    for x in STATS:
+        qq.append(x[3])
+    print("среднее качество по всем прочтениям", sum(qq) / len(qq))
 
-f3 = open(DEFAULT_RESULTS/"qc_summary.tsv", "w")
-f3.write("read\tlength\tgc\tmeanq\n")
-for x in STATS:
-    f3.write(x[0][1:] + "\t" + str(x[1]) + "\t" + str(round(x[2], 2)) + "\t" + str(round(x[3], 2)) + "\n")
-f3.close()
+    nn = 0
+    for x in r:
+        if "N" in x[1]:
+            nn = nn + 1
+    print("прочтений с N", nn)
+    print("доля N-содержащих", nn / len(r))
 
-f4 = open(DEFAULT_RESULTS/"report.txt", "w")
-f4.write("QC ОТЧЁТ\n")
-f4.write("файл: " + str(DEFAULT_INPUT) + "\n")
-f4.write("всего прочтений: " + str(len(r)) + "\n")
-f4.write("прошло фильтр: " + str(len(good)) + "\n")
-f4.write("средний GC: " + str(round(m2, 2)) + "\n")
-f4.write("прочтений с N: " + str(nn) + "\n")
-f4.close()
+    # for x in STATS:
+    #     if x[3] < 15:
+    #         print("очень плохое", x[0])
 
-print("отчёт записан в", DEFAULT_RESULTS/"report.txt")
-print("ГОТОВО")
+    plt.figure(figsize=(10, 4))
+    plt.subplot(1, 2, 1)
+    plt.hist(g2, bins=40)
+    plt.axvline(m2, color="r")
+    plt.xlabel("GC, %")
+    plt.ylabel("число прочтений")
+    plt.title("GC-состав")
+    plt.subplot(1, 2, 2)
+    ll = []
+    for x in STATS:
+        ll.append(x[3])
+    plt.hist(ll, bins=40)
+    plt.axvline(25, color="r")
+    plt.xlabel("среднее качество")
+    plt.ylabel("число прочтений")
+    plt.title("Качество прочтений")
+    plt.tight_layout()
+    plt.savefig(results_dir/"qc.png", dpi=200)
+    print("график готов")
+
+    f2 = open(results_dir / "clean_reads.fasta", "w", encoding="utf-8")
+    for x in good:
+        f2.write(">" + x[0][1:] + "\n")
+        f2.write(x[1] + "\n")
+    f2.close()
+
+    f3 = open(results_dir / "qc_summary.tsv", "w", encoding="utf-8")
+    f3.write("read\tlength\tgc\tmeanq\n")
+    for x in STATS:
+        f3.write(x[0][1:] + "\t" + str(x[1]) + "\t" + str(round(x[2], 2)) + "\t" + str(round(x[3], 2)) + "\n")
+    f3.close()
+
+    f4 = open(results_dir/"report.txt", "w", encoding="utf-8")
+    f4.write("QC ОТЧЁТ\n")
+    f4.write("файл: " + str(DEFAULT_INPUT) + "\n")
+    f4.write("всего прочтений: " + str(len(r)) + "\n")
+    f4.write("прошло фильтр: " + str(len(good)) + "\n")
+    f4.write("средний GC: " + str(round(m2, 2)) + "\n")
+    f4.write("прочтений с N: " + str(nn) + "\n")
+    f4.close()
+
+    print("отчёт записан в", DEFAULT_RESULTS/"report.txt")
+    print("ГОТОВО")
+
+if __name__ == "__main__":
+
+    main()
